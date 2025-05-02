@@ -5,11 +5,13 @@ export const UsersSchema = mongoose.Schema(
         email: {
           type: String,
           required: true,
-          unique: true
+          unique: true,
+          trim: true
         },
         firstName: {
             type: String,
             required: true,
+            trim: true
         },
         lastName: {
             type: String,
@@ -17,20 +19,24 @@ export const UsersSchema = mongoose.Schema(
         },
         password: {
           type: String,
-          required: true,
+          required: true
         },
         role: {
-          type: String,
-          required: true,
-          enum: ['ADMIN', 'SALES', 'EXECUTIVE', 'USER']
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "RolesModel",
+          // type: String,
+          // enum: ['ADMIN', 'SALES', 'EXECUTIVE', 'USER'],
+          required: true
         },
         createdByUserId: {
           type: String,
-          required: true
+          required: true,
+          trim: true
         },
         updatedByUserId:{
           type: String,
-          required: true
+          required: true,
+          trim: true
         },
         published: {
             type: Boolean,

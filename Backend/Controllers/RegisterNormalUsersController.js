@@ -6,7 +6,7 @@ dotenv.config();
 
 const RegisterNormalUser = async (req, res) => {
   try {
-    const { email, password, firstName, lastName, role = "USER" } = req.body;
+    const { email, password, firstName, lastNamem, role} = req.body;
     if (!email || !password || !firstName || !lastName || !role) {
       return res.status(400).json({
         message: "bad request check data again",
@@ -20,15 +20,18 @@ const RegisterNormalUser = async (req, res) => {
         data: req.body,
       });
     }
+
+    const roleData = await RolesModel.findById(roleId)
+
     const hashedPassword = await bcrypt.hash(password, SALT);
     const newUser = {
       email: email,
       password: hashedPassword,
       firstName: firstName,
       lastName: lastName,
-      role: role.toUpperCase(),
-      createdByUserId: "user001",
-      updatedByUserId: "user001",
+      role: roleData._id,
+      createdByUserId: "guest",
+      updatedByUserId: "guest",
       published: true,
     };
     const user = await UsersModel.create(newUser);

@@ -2,6 +2,7 @@ import { UsersModel } from "../Models/UsersModel.js"
 import bcrypt from "bcryptjs"
 import * as dotenv from 'dotenv'
 import { emailRegex, SALT } from "../config.js"
+import { RolesModel } from "../Models/RolesModel.js"
 dotenv.config()
 
 
@@ -21,13 +22,14 @@ const Register = async (req, res) => {
                 data: req.body
             })
         }
+        const roleData = await RolesModel.findById(role)
         const hashedPassword = await bcrypt.hash(password, SALT);
         const newUser = {
             email: email,
             password: hashedPassword,
             firstName: firstName,
             lastName: lastName,
-            role: role.toUpperCase(),
+            role: roleData._id,
             createdByUserId: req.user.id,
             updatedByUserId: req.user.id,
             published: true
@@ -50,7 +52,7 @@ const Register = async (req, res) => {
 
 const GetAllUsers = async (req, res) => {
     try {
-        const users = await UsersModel.find({ published: true });
+        const users = await UsersModel.find({ published: true })
         return res.status(200).json({
             message: 'all users',
             count: users.length,
@@ -84,27 +86,27 @@ const GetAllNotPublishedUsers = async (req, res) => {
 
 const GetAllUsersWithParams = async (req, res) => {
     try {
-        const { email = null, firstName = null, lastName = null, role = null, published = null } = req.body;
-        let filter = {};
+        const { email = null, firstName = null, lastName = null, roleId = null, published = null } = req.body
+        let filter = {}
 
         if (email !== null) {
-            filter.email = { $regex: email, $options: "i" };
+            filter.email = { $regex: email, $options: "i" }
         }
 
         if (firstName !== null) {
-            filter.firstName = { $regex: firstName, $options: "i" };
+            filter.firstName = { $regex: firstName, $options: "i" }
         }
 
         if (lastName !== null) {
-            filter.lastName = { $regex: lastName, $options: "i" };
+            filter.lastName = { $regex: lastName, $options: "i" }
         }
 
-        if (role !== null) {
-            filter.role = { $regex: role.toUpperCase(), $options: "i" };
+        if (roleId !== null) {
+            filter.role = roleId
         }
 
         if (published !== null) {
-            filter.published = published;
+            filter.published = published
         }
 
         const users = await UsersModel.find(filter);
@@ -149,8 +151,7 @@ const GetUserById = async (req, res) => {
 
 const Edit = async (req, res) => {
     try {
-        const { email, firstName, lastName, role } = req.body
-        console.log(req.body)
+        const { email, firstName, lastName, role, published = flase } = req.body
         if (!email || !firstName || !lastName || !role) {
             return res.status(400).json({
                 message: 'bad request check data again',
@@ -172,16 +173,16 @@ const Edit = async (req, res) => {
                 message: 'user not found'
             })
         }
-
+        const roleData = await RolesModel.findById(role)
         const newUser = {
             email: email,
             password: user.password,
             firstName: firstName,
             lastName: lastName,
-            role: role.toUpperCase(),
+            role: roleData._id,
             createdByUserId: user.createdByUserId,
             updatedByUserId: req.user.id,
-            published: true
+            published: published
         }
         
         const result = await UsersModel.findByIdAndUpdate(id, newUser)
