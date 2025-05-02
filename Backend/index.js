@@ -3,10 +3,12 @@ import mongoose from 'mongoose'
 import cors from 'cors'
 import * as dotenv from 'dotenv'
 import {AuthMiddelware} from './Middlewares/AuthMiddelware.js'
-import {RoleAuthMiddelware} from './Middlewares/RoleAuthMiddelware.js'
+import {RoleAuthMiddleware} from './Middlewares/RoleAuthMiddelware.js'
 import UsersRouter from './Routes/usersRoutes.js'
 import LoginRoute from './Routes/login.js'
 import RegisterNormalUserRouter from './Routes/registerNormalUser.js'
+import RolesRouter from './Routes/rolesRoutes.js'
+
 
 dotenv.config()
 const PORT = process.env.PORT
@@ -40,7 +42,8 @@ app.get('/api/', (req, res)=>{
 
 app.use('/api/auth', LoginRoute)
 app.use('/api/', RegisterNormalUserRouter)
-app.use('/api/users',AuthMiddelware, RoleAuthMiddelware("admin"), UsersRouter)
+app.use('/api/users',AuthMiddelware, RoleAuthMiddleware("admin"), UsersRouter)
+app.use('/api/roles',AuthMiddelware, RoleAuthMiddleware("admin"), RolesRouter)
 
 
 // #region DB Connection
