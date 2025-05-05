@@ -2,17 +2,17 @@ import mongoose from "mongoose";
 import * as dotenv from 'dotenv'
 
 dotenv.config()
-export const RolesSchema = mongoose.Schema(
+export const PropertyTypesSchema = mongoose.Schema(
     {
-        name: {
+        typeName: {
           type: String,
-          enum: ['ADMIN', 'SALES', 'EXECUTIVE', 'USER', 'SALLER'],
           required: true,
-          unique: true,
-          trim: true
+          enum: ["APARTMENT", "HOUSE", "VILLA", "LAND", "COMMERCIAL"],
+          unique: true
         },
         description: {
             type: String,
+            required: true,
             trim: true
         },
         createdByUserId: {

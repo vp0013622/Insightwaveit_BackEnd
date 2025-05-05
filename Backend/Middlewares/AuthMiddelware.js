@@ -24,11 +24,10 @@ const AuthMiddelware = async(req, res, next)=>{
             var user = decodedToken //we put user in req param so we can use it further middelwares
             const userRoleDoc = await RolesModel.findOne({"name": user.role})
             if (!userRoleDoc) {
-                return res.status(403).json({ message: "Access denied: role not found" });
+                return res.status(401).json({ message: "Access denied: role not found" });
             }
             user.roleId = userRoleDoc._id //replacing role name with id
             req.user = user
-            console.log(user)
             next()
         }
         catch(error){

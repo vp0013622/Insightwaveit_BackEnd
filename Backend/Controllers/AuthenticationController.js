@@ -19,7 +19,7 @@ const Login = async (req, res) => {
         
         const isEmailValidationTrue = emailRegex.test(email);
         if(!isEmailValidationTrue){
-            return res.status(401).json({
+            return res.status(400).json({
                 message: 'email is not valid',
                 data: req.body
             })
@@ -33,21 +33,21 @@ const Login = async (req, res) => {
                 })
         }
         if(!user.published){
-            return res.status(404).json({
+            return res.status(403).json({
                     message: 'user deactivated by admin, contact admin support',
                     data: req.body
                 })
         }
         const isPasswordValid = await bcrypt.compare(password, user.password);
         if(!isPasswordValid){
-            return res.status(401).json({
+            return res.status(400).json({
                 message: 'incorrect email and password',
                 data: req.body
             })
         }
         const userRoleDoc = await RolesModel.findById(user.role);
         if (!userRoleDoc) {
-            return res.status(403).json({ message: "Access denied: role not found" });
+            return res.status(401).json({ message: "Access denied: role not found" });
         }
 
         var token = jwt.sign({id: user._id, role: userRoleDoc.name}, process.env.JWT_SECRET, {expiresIn:"1d"})
