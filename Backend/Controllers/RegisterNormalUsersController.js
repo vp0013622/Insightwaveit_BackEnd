@@ -6,7 +6,7 @@ dotenv.config();
 
 const RegisterNormalUser = async (req, res) => {
   try {
-    const { email, password, firstName, lastNamem, role} = req.body;
+    const { email, password, firstName, lastNamem, phoneNumber, role} = req.body;
     if (!email || !password || !firstName || !lastName || !role) {
       return res.status(400).json({
         message: "bad request check data again",
@@ -21,6 +21,14 @@ const RegisterNormalUser = async (req, res) => {
       });
     }
 
+    const isPhoneNumberValidationTrue = phoneRegex.test(phoneNumber);
+        if (!isPhoneNumberValidationTrue) {
+            return res.status(401).json({
+                message: 'phone number is not valid',
+                data: req.body
+            })
+    }
+
     const roleData = await RolesModel.findById(roleId)
 
     const hashedPassword = await bcrypt.hash(password, SALT);
@@ -29,6 +37,7 @@ const RegisterNormalUser = async (req, res) => {
       password: hashedPassword,
       firstName: firstName,
       lastName: lastName,
+      phoneNumber: phoneNumber,
       role: roleData._id,
       createdByUserId: "guest",
       updatedByUserId: "guest",

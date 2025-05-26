@@ -1,14 +1,14 @@
 import { UsersModel } from "../Models/UsersModel.js"
 import bcrypt from "bcryptjs"
 import * as dotenv from 'dotenv'
-import { emailRegex, SALT } from "../config.js"
+import { emailRegex, phoneRegex, SALT } from "../config.js"
 import { RolesModel } from "../Models/RolesModel.js"
 dotenv.config()
 
 
 const Register = async (req, res) => {
     try {
-        const { email, password, firstName, lastName, role } = req.body
+        const { email, password, firstName, lastName, phoneNumber, role } = req.body
         if (!email || !password || !firstName || !lastName || !role) {
             return res.status(400).json({
                 message: 'bad request check data again',
@@ -22,6 +22,15 @@ const Register = async (req, res) => {
                 data: req.body
             })
         }
+
+        const isPhoneNumberValidationTrue = phoneRegex.test(phoneNumber);
+        if (!isPhoneNumberValidationTrue) {
+            return res.status(401).json({
+                message: 'phone number is not valid',
+                data: req.body
+            })
+        }
+
         const roleData = await RolesModel.findById(role)
         const hashedPassword = await bcrypt.hash(password, SALT);
         const newUser = {
@@ -29,6 +38,7 @@ const Register = async (req, res) => {
             password: hashedPassword,
             firstName: firstName,
             lastName: lastName,
+            phoneNumber: phoneNumber,
             role: roleData._id,
             createdByUserId: req.user.id,
             updatedByUserId: req.user.id,
@@ -86,7 +96,7 @@ const GetAllNotPublishedUsers = async (req, res) => {
 
 const GetAllUsersWithParams = async (req, res) => {
     try {
-        const { email = null, firstName = null, lastName = null, roleId = null, published = null } = req.body
+        const { email = null, firstName = null, lastName = null, phoneNumber = null, roleId = null, published = null } = req.body
         let filter = {}
 
         if (email !== null) {
@@ -99,6 +109,10 @@ const GetAllUsersWithParams = async (req, res) => {
 
         if (lastName !== null) {
             filter.lastName = { $regex: lastName, $options: "i" }
+        }
+
+        if (phoneNumber !== null) {
+            filter.phoneNumber = phoneNumber
         }
 
         if (roleId !== null) {
@@ -151,7 +165,7 @@ const GetUserById = async (req, res) => {
 
 const Edit = async (req, res) => {
     try {
-        const { email, firstName, lastName, role, published = flase } = req.body
+        const { email, firstName, lastName, phoneNumber, role, published = flase } = req.body
         if (!email || !firstName || !lastName || !role) {
             return res.status(400).json({
                 message: 'bad request check data again',
@@ -165,6 +179,15 @@ const Edit = async (req, res) => {
                 data: req.body
             })
         }
+
+        const isPhoneNumberValidationTrue = phoneRegex.test(phoneNumber);
+        if (!isPhoneNumberValidationTrue) {
+            return res.status(401).json({
+                message: 'phone number is not valid',
+                data: req.body
+            })
+        }
+
         var { id } = req.params
         //const hashedPassword = await bcrypt.hash(password, SALT)
         const user = await UsersModel.findById(id)
@@ -179,6 +202,7 @@ const Edit = async (req, res) => {
             password: user.password,
             firstName: firstName,
             lastName: lastName,
+            phoneNumber: phoneNumber,
             role: roleData._id,
             createdByUserId: user.createdByUserId,
             updatedByUserId: req.user.id,
