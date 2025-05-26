@@ -1,6 +1,7 @@
 import express from 'express'
 import mongoose from 'mongoose'
 import cors from 'cors'
+import multer from 'multer'
 import * as dotenv from 'dotenv'
 import {AuthMiddelware} from './Middlewares/AuthMiddelware.js'
 import {RoleAuthMiddleware} from './Middlewares/RoleAuthMiddelware.js'
@@ -12,6 +13,11 @@ import PropertyTypesRouter from './Routes/propertyTypesRoutes.js'
 import UserAddressRouter from './Routes/userAddressRoutes.js'
 import PropertyRouter from './Routes/propertyRoutes.js'
 import { RolesModel } from './Models/RolesModel.js'
+
+import path from 'path';
+import { fileURLToPath } from 'url';
+import UserProfilePictureRouter from './Routes/userProfilePictureRoutes.js'
+
 
 dotenv.config()
 const PORT = process.env.PORT
@@ -31,6 +37,15 @@ app.use(cors());
 //     allowedHeaders: ['content-type']
 // }))
 
+
+
+// For serving uploaded images statically
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+app.use('/profileImages', express.static(path.join(__dirname, 'profileImages')));
+app.use('/propertyImagesUploads', express.static(path.join(__dirname, 'propertyImagesUploads')));
+
+
 //defult route.
 app.get('/', (req, res)=>{
     return res.status(200).json({
@@ -42,7 +57,6 @@ app.get('/api/', (req, res)=>{
         message: 'welcome to api'
     })
 })
-
 const addTempRole = async(req, res)=>{
     try {
         await addTempRole(req, res);
@@ -69,7 +83,6 @@ const addTempRole = async(req, res)=>{
         })
     }
 }
-
 app.post('/api/tempSetup', async(req, res)=>{
     try {
 
@@ -80,6 +93,7 @@ app.post('/api/tempSetup', async(req, res)=>{
                 firstName: "Temp",
                 lastName: "Admin",
                 password: "admin@123",
+                phoneNumber: "+919185867888",
                 role: role._id
         }
         const hashedPassword = await bcrypt.hash(reqData.password, SALT);
@@ -108,14 +122,23 @@ app.post('/api/tempSetup', async(req, res)=>{
         })
     }
 })
+app.get('/api/auth/check', AuthMiddelware, async(req, res)=>{
+    res.status(200).json({
+            message: 'Authenticated',
+            data: true
+    })
+})
+
+//file uploading
+app.use('/api/file/userprofilepicture', AuthMiddelware, RoleAuthMiddleware("admin", "sales", "executive", "user", "saller"), UserProfilePictureRouter)
 
 app.use('/api/auth', LoginRoute)
 app.use('/api/normaluser', RegisterNormalUserRouter)
-app.use('/api/users',AuthMiddelware, RoleAuthMiddleware("admin"), UsersRouter)
-app.use('/api/roles',AuthMiddelware, RoleAuthMiddleware("admin"), RolesRouter)
-app.use('/api/useraddress',AuthMiddelware, RoleAuthMiddleware("admin", "sales", "executive", "user", "saller"), UserAddressRouter)
-app.use('/api/properytypes',AuthMiddelware, RoleAuthMiddleware("admin", "sales"), PropertyTypesRouter)
-app.use('/api/property',AuthMiddelware, RoleAuthMiddleware("admin", "sales", "executive", "saller"), PropertyRouter)
+app.use('/api/users',AuthMiddelware, UsersRouter)
+app.use('/api/roles',AuthMiddelware, RolesRouter)
+app.use('/api/useraddress',AuthMiddelware, UserAddressRouter)
+app.use('/api/properytypes',AuthMiddelware, PropertyTypesRouter)
+app.use('/api/property',AuthMiddelware, PropertyRouter)
 
 // #region DB Connection
 mongoose.connect(DB_CONNECTION_STRING)

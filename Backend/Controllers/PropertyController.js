@@ -1,10 +1,14 @@
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { PropertyModel } from "../Models/PropertyModel.js"
-import bcrypt from "bcryptjs"
 import * as dotenv from 'dotenv'
-import { emailRegex, SALT } from "../config.js"
-import { RolesModel } from "../Models/RolesModel.js"
+import { PropertyImagesModel } from "../Models/PropertyImagesModel.js"
 dotenv.config()
 
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const Create = async (req, res) => {
     try {
@@ -236,6 +240,180 @@ const DeleteById = async (req, res) => {
     }
 }
 
+const CreatePropertyImageByPropertyId = async (req, res) =>{
+    try {
+        const { propertyId } = req.body;
+        const file = req.file;
+    
+    
+        // Validation
+        if (!propertyId || !file) {
+          return res.status(400).json({
+            message: 'bad request',
+          });
+        }
+    
+        const fileName = file.originalname;
+        const imageUrl = `http://localhost:8080/propertyImagesUploads/${fileName}`; // Use IP if accessed from Flutter
+    
+        // Check if user already has a profile picture
+        // const existing = await UserProfilePictureModel.findOne({ userId });
+    
+        // if (existing) {
+        //   // Delete old image file from uploads folder
+        //   const oldFilePath = path.join(__dirname, '../propertyImagesUploads', existing.fileName);
+        //   if (fs.existsSync(oldFilePath)) {
+        //     fs.unlinkSync(oldFilePath);
+        //   }
+    
+        //   // Optionally remove DB entry (or you can update instead)
+        //   await UserProfilePictureModel.deleteOne({ _id: existing._id });
+        // }
+    
+        // Save new record
+        const newFile = {
+          propertyId,
+          fileName,
+          url: imageUrl,
+          createdByUserId: req.user?.id,
+          updatedByUserId: req.user?.id,
+          published: true,
+        };
+    
+        const propertyImages = await PropertyImagesModel.create(newFile);
+    
+        return res.status(200).json({
+          message: 'propert image added successfully',
+          data: propertyImages,
+        });
+    
+      } catch (error) {
+        //console.log(error.message,)
+        return res.status(500).json({
+          message: 'internal server error, while creating property image',
+          error: error.message,
+        });
+      }
+}
+
+const GetAllPropertyImagesByPropertyId = async (req, res) =>{
+    try {
+        const { propertyId } = req.body
+        var proerty = null
+        if(propertyId){
+            var result = await PropertyModel.findById(propertyId);
+            if(result){
+                proerty = result
+            }
+        }   
+        if(proerty == null){
+            res.status(404).json({
+                message: 'property not found, to search images by property',
+                data: proerty
+            })
+        }
+
+        const propertyImages = await PropertyImagesModel.find({ propertyId: propertyId })
+        return res.status(200).json({
+            message: 'property images by property',
+            count: propertyImages.length,
+            data: propertyImages
+        })
+    }
+    catch (error) {
+        res.status(500).json({
+            message: 'internal server error',
+            error: error.message
+        })
+    }
+}
+
+const GetPropertyImageById = async (req, res) =>{
+        try {
+        var { id } = req.params
+        const propertyImage = await PropertyImagesModel.findById(id)
+        if (propertyImage == null) {
+            return res.status(404).json({
+                message: 'property image not found',
+                data: propertyImage
+            })
+        }
+        return res.status(200).json({
+            message: 'property image found',
+            data: propertyImage
+        })
+    }
+    catch (error) {
+        res.status(500).json({
+            message: 'internal server error',
+            error: error.message
+        })
+    }
+}
+
+const DeletePropertyImageById = async (req, res) =>{
+    try {
+        var { id } = req.params
+        const propertyImage = await PropertyImagesModel.findById(id)
+        if (propertyImage == null) {
+            return res.status(404).json({
+                message: 'property image not found',
+                data: propertyImage
+            })
+        }
+        propertyImage.updatedByUserId = req.user.id
+        propertyImage.published = false
+        const result = await PropertyImagesModel.findByIdAndUpdate(id, propertyImage)
+        if (!result) {
+            return res.status(404).json({
+                message: 'property image not found'
+            })
+        }
+        return res.status(201).json({
+            message: 'property image deleted successfully'
+        })
+    }
+    catch (error) {
+        res.status(500).json({
+            message: 'internal server error',
+            error: error.message
+        })
+    }
+}
+
+const DeleteAllPropertyImageById = async (req, res) =>{
+    try {
+        const { propertyId } = req.body
+        const propertyImages = await PropertyImagesModel.find({propertyId: propertyId})
+        if (propertyImages == null || propertyImages.length <= 0) {
+            return res.status(404).json({
+                message: 'property images not found to delete',
+                data: propertyImages
+            })
+        }
+
+        for(var primage in  propertyImages){
+            primage.updatedByUserId = req.user.id
+            primage.published = false
+            const result = await PropertyImagesModel.findByIdAndUpdate(primage._id, propertyImage)
+            if (!result) {
+                return res.status(404).json({
+                    message: 'property image not found'
+                })
+            }
+            return res.status(201).json({
+                message: 'property image deleted successfully'
+            })
+        }
+    }
+    catch (error) {
+        res.status(500).json({
+            message: 'internal server error',
+            error: error.message
+        })
+    }
+}
 export {
-    Create, GetAllProperty, GetAllNotPublishedProperty, GetAllPropertyWithParams, GetPropertyById, Edit, DeleteById
+    Create, GetAllProperty, GetAllNotPublishedProperty, GetAllPropertyWithParams, GetPropertyById, Edit, DeleteById,
+    CreatePropertyImageByPropertyId, GetAllPropertyImagesByPropertyId, GetPropertyImageById, DeletePropertyImageById, DeleteAllPropertyImageById
 }
