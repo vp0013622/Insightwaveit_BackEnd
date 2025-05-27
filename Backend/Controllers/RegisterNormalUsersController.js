@@ -6,7 +6,7 @@ dotenv.config();
 
 const RegisterNormalUser = async (req, res) => {
   try {
-    const { email, password, firstName, lastNamem, phoneNumber, role} = req.body;
+    const { email, password, firstName, lastName, phoneNumber, role} = req.body;
     if (!email || !password || !firstName || !lastName || !role) {
       return res.status(400).json({
         message: "bad request check data again",

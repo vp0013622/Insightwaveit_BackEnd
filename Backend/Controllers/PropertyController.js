@@ -254,7 +254,7 @@ const CreatePropertyImageByPropertyId = async (req, res) =>{
         }
     
         const fileName = file.originalname;
-        const imageUrl = `http://localhost:8080/propertyImagesUploads/${fileName}`; // Use IP if accessed from Flutter
+        const imageUrl = `http://localhost:8080/propertyImagesUploads/${fileName}`//`https://insightwaveit-backend-p0cl.onrender.com/propertyImagesUploads/${fileName}`; // Use IP if accessed from Flutter
     
         // Check if user already has a profile picture
         // const existing = await UserProfilePictureModel.findOne({ userId });

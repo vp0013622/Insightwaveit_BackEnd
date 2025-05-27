@@ -77,7 +77,7 @@ const Create = async (req, res) => {
     }
 
     const fileName = file.originalname;
-    const imageUrl = `http://localhost:8080/profileImages/${fileName}`; // Use IP if accessed from Flutter
+    const imageUrl = `http://localhost:8080/profileImages/${fileName}`//`https://insightwaveit-backend-p0cl.onrender.com/profileImages/${fileName}`; // Use IP if accessed from Flutter
 
     // Check if user already has a profile picture
     const existing = await UserProfilePictureModel.findOne({ userId });
@@ -227,7 +227,7 @@ const Edit = async (req, res) => {
 
     // New image data
     const fileName = file.originalname;
-    const imageUrl = `http://localhost:8080/profileImages/${fileName}`;
+    const imageUrl = `http://localhost:8080/profileImages/${fileName}`;//`https://insightwaveit-backend-p0cl.onrender.com/profileImages/${fileName}`
 
     const updatedData = {
       userId: userProfilePicture.userId,
