@@ -30,7 +30,7 @@ const RegisterNormalUser = async (req, res) => {
             })
     }
 
-    const roleData = await RolesModel.findById(roleId)
+    const roleData = await RolesModel.findById(role)
 
     const hashedPassword = await bcrypt.hash(password, SALT);
     const newUser = {
