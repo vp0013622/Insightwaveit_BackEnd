@@ -1,7 +1,8 @@
 import { UsersModel } from "../Models/UsersModel.js";
 import bcrypt from "bcryptjs";
 import * as dotenv from "dotenv";
-import { emailRegex, SALT } from "../config.js";
+import { emailRegex, phoneRegex, SALT } from "../config.js";
+import { RolesModel } from "../Models/RolesModel.js";
 dotenv.config();
 
 const RegisterNormalUser = async (req, res) => {
@@ -29,7 +30,7 @@ const RegisterNormalUser = async (req, res) => {
             })
     }
 
-    const roleData = await RolesModel.findById(roleId)
+    const roleData = await RolesModel.findById(role)
 
     const hashedPassword = await bcrypt.hash(password, SALT);
     const newUser = {

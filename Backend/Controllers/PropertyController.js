@@ -245,31 +245,35 @@ const CreatePropertyImageByPropertyId = async (req, res) =>{
         const { propertyId } = req.body;
         const file = req.file;
     
-    
         // Validation
         if (!propertyId || !file) {
           return res.status(400).json({
             message: 'bad request',
           });
         }
+
+        // Check for duplicate image by comparing filename (excluding the unique suffix)
+        const baseFileName = file.originalname.split('.')[0].split('-')[0]; // Get base filename without unique suffix
+        const existingImages = await PropertyImagesModel.find({ 
+            propertyId,
+            fileName: { $regex: new RegExp(`^${baseFileName}.*`) }
+        });
+
+        if (existingImages.length > 0) {
+            // Delete the uploaded file since it's a duplicate
+            const filePath = file.path;
+            if (fs.existsSync(filePath)) {
+                fs.unlinkSync(filePath);
+            }
+            return res.status(400).json({
+                message: 'Duplicate image detected. This image already exists for this property.',
+                data: null
+            });
+        }
     
         const fileName = file.originalname;
-        //const imageUrl = `http://localhost:8080/propertyImagesUploads/${fileName}`
-        const imageUrl = `https://insightwaveit-backend-p0cl.onrender.com/propertyImagesUploads/${fileName}`; // Use IP if accessed from Flutter
-    
-        // Check if user already has a profile picture
-        // const existing = await UserProfilePictureModel.findOne({ userId });
-    
-        // if (existing) {
-        //   // Delete old image file from uploads folder
-        //   const oldFilePath = path.join(__dirname, '../propertyImagesUploads', existing.fileName);
-        //   if (fs.existsSync(oldFilePath)) {
-        //     fs.unlinkSync(oldFilePath);
-        //   }
-    
-        //   // Optionally remove DB entry (or you can update instead)
-        //   await UserProfilePictureModel.deleteOne({ _id: existing._id });
-        // }
+        const imageUrl = `http://localhost:8080/propertyImagesUploads/${fileName}`
+        //const imageUrl = `https://insightwaveit-backend-p0cl.onrender.com/propertyImagesUploads/${fileName}`; // Use IP if accessed from Flutter
     
         // Save new record
         const newFile = {
@@ -284,12 +288,19 @@ const CreatePropertyImageByPropertyId = async (req, res) =>{
         const propertyImages = await PropertyImagesModel.create(newFile);
     
         return res.status(200).json({
-          message: 'propert image added successfully',
+          message: 'property image added successfully',
           data: propertyImages,
         });
     
       } catch (error) {
-        //console.log(error.message,)
+        // If there's an error, ensure we clean up any uploaded file
+        if (req.file && req.file.path) {
+            try {
+                fs.unlinkSync(req.file.path);
+            } catch (unlinkError) {
+                console.error('Error deleting file:', unlinkError);
+            }
+        }
         return res.status(500).json({
           message: 'internal server error, while creating property image',
           error: error.message,
