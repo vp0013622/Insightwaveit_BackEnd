@@ -165,7 +165,7 @@ const GetUserById = async (req, res) => {
 
 const Edit = async (req, res) => {
     try {
-        const { email, firstName, lastName, phoneNumber, role, published = flase } = req.body
+        const { email, firstName, lastName, phoneNumber, password = null, role, published = true } = req.body
         if (!email || !firstName || !lastName || !role) {
             return res.status(400).json({
                 message: 'bad request check data again',
@@ -196,10 +196,12 @@ const Edit = async (req, res) => {
                 message: 'user not found'
             })
         }
+
         const roleData = await RolesModel.findById(role)
+        const hashedPassword =  password != null && password != '' ? await bcrypt.hash(password, SALT) : null;
         const newUser = {
             email: email,
-            password: user.password,
+            password: hashedPassword != null ? hashedPassword : user.password,
             firstName: firstName,
             lastName: lastName,
             phoneNumber: phoneNumber,

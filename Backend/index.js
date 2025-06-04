@@ -3,8 +3,10 @@ import mongoose from 'mongoose'
 import cors from 'cors'
 import multer from 'multer'
 import * as dotenv from 'dotenv'
+import bcrypt from 'bcrypt'
 import {AuthMiddelware} from './Middlewares/AuthMiddelware.js'
 import {RoleAuthMiddleware} from './Middlewares/RoleAuthMiddelware.js'
+import { errorHandler } from './Middlewares/Handlers/ErrorHandler.js'
 import UsersRouter from './Routes/usersRoutes.js'
 import LoginRoute from './Routes/login.js'
 import RegisterNormalUserRouter from './Routes/registerNormalUser.js'
@@ -13,38 +15,65 @@ import PropertyTypesRouter from './Routes/propertyTypesRoutes.js'
 import UserAddressRouter from './Routes/userAddressRoutes.js'
 import PropertyRouter from './Routes/propertyRoutes.js'
 import { RolesModel } from './Models/RolesModel.js'
+import { UsersModel } from './Models/UsersModel.js'
 
 import path from 'path';
 import { fileURLToPath } from 'url';
 import UserProfilePictureRouter from './Routes/userProfilePictureRoutes.js'
-
+import fs from 'fs';
 
 dotenv.config()
 const PORT = process.env.PORT
 const DB_CONNECTION_STRING = process.env.DB_CONNECTION_STRING
+const SALT = 10 // Added salt rounds for bcrypt
 
 const app = express()
 
-//middle ware for parsing json request:
-app.use(express.json())
-//middle ware for cores policy: default * to allow all routes
-app.use(cors());
-//do not remove the below commented part
-//custome cors configuration
-// app.use(cors({
-//     origin:'http://localhost:8080/',
-//     methods: ['GET', 'POST', 'PUT', 'DELETE'], //now only this methods are allowed while link starting with "http://localhost:8080/"
-//     allowedHeaders: ['content-type']
-// }))
-
-
-
-// For serving uploaded images statically
+// For serving uploaded images statically - MOVED TO TOP PRIORITY
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-app.use('/profileImages', express.static(path.join(__dirname, 'profileImages')));
-app.use('/propertyImagesUploads', express.static(path.join(__dirname, 'propertyImagesUploads')));
 
+// Ensure directories exist
+const profileImagesDir = path.join(__dirname, 'profileImages');
+const propertyImagesDir = path.join(__dirname, 'propertyImagesUploads');
+
+// Create directories if they don't exist
+if (!fs.existsSync(profileImagesDir)) {
+    fs.mkdirSync(profileImagesDir, { recursive: true });
+}
+if (!fs.existsSync(propertyImagesDir)) {
+    fs.mkdirSync(propertyImagesDir, { recursive: true });
+}
+
+//middle ware for parsing json request:
+app.use(express.json())
+
+//middle ware for cores policy: default * to allow all routes
+app.use(cors());
+
+// Static file serving - BEFORE ANY ROUTE HANDLERS
+app.use('/profileImages', express.static(profileImagesDir));
+app.use('/propertyImagesUploads', express.static(propertyImagesDir));
+
+// Test route for checking image existence
+app.get('/check-image/:filename', (req, res) => {
+    const filename = req.params.filename;
+    const imagePath = path.join(profileImagesDir, filename);
+    
+    if (fs.existsSync(imagePath)) {
+        res.json({
+            exists: true,
+            path: imagePath,
+            size: fs.statSync(imagePath).size + ' bytes'
+        });
+    } else {
+        res.status(404).json({
+            exists: false,
+            path: imagePath,
+            error: 'Image not found'
+        });
+    }
+});
 
 //defult route.
 app.get('/', (req, res)=>{
@@ -57,71 +86,83 @@ app.get('/api/', (req, res)=>{
         message: 'welcome to api'
     })
 })
-const addTempRole = async(req, res)=>{
+
+// Error handling middleware should be LAST
+app.use(errorHandler);
+
+const createAdminRole = async () => {
     try {
-        await addTempRole(req, res);
-        const reqData = {
-                name: "ADMIN",
-                description: "",
-                published: true
+        // Check if ADMIN role already exists
+        const existingRole = await RolesModel.findOne({ name: "ADMIN" });
+        if (existingRole) {
+            return existingRole;
         }
+
         const newRole = {
-            name: reqData.name,
-            description: reqData.description,
-            createdByUserId: "1",//req.user.id,
-            updatedByUserId: "1",//req.user.id,
+            name: "ADMIN",
+            description: "Super admin role with all privileges",
+            createdByUserId: "system",
+            updatedByUserId: "system",
             published: true
         }
-        const role = await RolesModel.create(newRole)
-        return res.status(200);
-
-    }
-    catch (error) {
-        res.status(500).json({
-            message: 'internal server error',
-            error: error.message
-        })
+        return await RolesModel.create(newRole);
+    } catch (error) {
+        throw new Error(`Error creating admin role: ${error.message}`);
     }
 }
-app.post('/api/tempSetup', async(req, res)=>{
-    try {
 
-        await addTempRole(req, res);
-        var role = await RolesModel.findBy({name: "ADMIN"})
-        const reqData = {
-                email: "admin@gmail.com",
-                firstName: "Temp",
-                lastName: "Admin",
-                password: "admin@123",
-                phoneNumber: "+919185867888",
-                role: role._id
+app.post('/api/tempSetup', async(req, res, next) => {
+    try {
+        // First create or get admin role
+        const adminRole = await createAdminRole();
+        
+        // Check if admin user already exists
+        const existingAdmin = await UsersModel.findOne({ email: "admin@gmail.com" });
+        if (existingAdmin) {
+            return res.status(400).json({
+                message: 'Admin user already exists',
+                data: { email: existingAdmin.email }
+            });
         }
-        const hashedPassword = await bcrypt.hash(reqData.password, SALT);
+
+        const adminData = {
+            email: "admin@gmail.com",
+            firstName: "Temp",
+            lastName: "Admin",
+            password: "admin@123",
+            phoneNumber: "+919185867888",
+            role: adminRole._id
+        }
+
+        const hashedPassword = await bcrypt.hash(adminData.password, SALT);
         const newUser = {
-            email: reqData.email,
+            email: adminData.email,
             password: hashedPassword,
-            firstName: reqData.firstName,
-            lastName: reqData.lastName,
-            role: reqData.role,
-            createdByUserId: "1",//req.user.id,
-            updatedByUserId: "1",//req.user.id,
+            firstName: adminData.firstName,
+            lastName: adminData.lastName,
+            role: adminData.role,
+            phoneNumber: adminData.phoneNumber,
+            createdByUserId: "system",
+            updatedByUserId: "system",
             published: true
         }
-        const user = await UsersModel.create(newUser)
-        user.password = reqData.password
-        return res.status(200).json({
-            message: 'temp user added successfully',
-            data: user
-        })
 
+        const user = await UsersModel.create(newUser);
+        
+        // Don't send password in response
+        const responseUser = { ...user.toObject() };
+        delete responseUser.password;
+        
+        return res.status(200).json({
+            message: 'Admin user created successfully',
+            data: responseUser
+        });
+
+    } catch (error) {
+        next(error); // Pass error to error handler
     }
-    catch (error) {
-        res.status(500).json({
-            message: 'internal server error',
-            error: error.message
-        })
-    }
-})
+});
+
 app.get('/api/auth/check', AuthMiddelware, async(req, res)=>{
     res.status(200).json({
             message: 'Authenticated',
@@ -140,7 +181,7 @@ app.use('/api/useraddress',AuthMiddelware, UserAddressRouter)
 app.use('/api/properytypes',AuthMiddelware, PropertyTypesRouter)
 app.use('/api/property',AuthMiddelware, PropertyRouter)
 
-// #region DB Connection
+// DB Connection with error handling
 mongoose.connect(DB_CONNECTION_STRING)
 .then((response)=>{
     console.log(`DB CONNECTED: ${response.connection.host}, ${response.connection.name}`)
@@ -149,6 +190,6 @@ mongoose.connect(DB_CONNECTION_STRING)
     })
 })
 .catch((error)=>{
-    console.log(error)
-})
-// #endregion
+    console.error('Database connection error:', error);
+    process.exit(1);
+});
