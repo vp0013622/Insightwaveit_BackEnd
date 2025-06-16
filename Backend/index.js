@@ -21,6 +21,10 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import UserProfilePictureRouter from './Routes/userProfilePictureRoutes.js'
 import fs from 'fs';
+import LeadsRouter from './Routes/leadsRoutes.js'
+import FollowUpStatusRouter from './Routes/followUpStatusRoutes.js'
+import LeadStatusRouter from './Routes/leadStatusRoutes.js'
+import ReferenceSourceRouter from './Routes/referenceSourceRoutes.js'
 
 dotenv.config()
 const PORT = process.env.PORT
@@ -180,6 +184,10 @@ app.use('/api/roles',AuthMiddelware, RolesRouter)
 app.use('/api/useraddress',AuthMiddelware, UserAddressRouter)
 app.use('/api/properytypes',AuthMiddelware, PropertyTypesRouter)
 app.use('/api/property',AuthMiddelware, PropertyRouter)
+app.use('/api/followupstatus',AuthMiddelware, FollowUpStatusRouter)
+app.use('/api/leadstatus',AuthMiddelware, LeadStatusRouter)
+app.use('/api/referancesource',AuthMiddelware, ReferenceSourceRouter)
+app.use('/api/leads',AuthMiddelware, LeadsRouter)
 
 // DB Connection with error handling
 mongoose.connect(DB_CONNECTION_STRING)

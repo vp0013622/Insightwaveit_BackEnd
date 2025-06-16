@@ -65,12 +65,14 @@ export const PropertySchema = mongoose.Schema(
           required: true
         },
         createdByUserId: {
-          type: String,
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "UsersModel",
           required: true,
           trim: true
         },
         updatedByUserId:{
-          type: String,
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "UsersModel",
           required: true,
           trim: true
         },
