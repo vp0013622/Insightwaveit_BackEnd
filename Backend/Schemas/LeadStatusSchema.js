@@ -1,20 +1,16 @@
 import mongoose from "mongoose";
-import * as dotenv from 'dotenv'
 
-dotenv.config()
-export const PropertyImagesSchema = mongoose.Schema(
+export const LeadStatusSchema = mongoose.Schema(
     {
-        propertyId:{
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "PropertyModel",
+        name: {
+            type: String,
+            required: true,
+            unique: true,
+            trim: true
         },
-        fileName:{
-          type: String,
-          trim: true
-        },
-        url:{
-          type: String,
-          trim: true
+        description: {
+            type: String,
+            trim: true
         },
         createdByUserId: {
           type: mongoose.Schema.Types.ObjectId,
@@ -34,6 +30,6 @@ export const PropertyImagesSchema = mongoose.Schema(
         }
     },
     {
-        timestamps: true,
+        timestamps: true
     }
 )
