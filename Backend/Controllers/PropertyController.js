@@ -272,8 +272,8 @@ const CreatePropertyImageByPropertyId = async (req, res) =>{
         }
     
         const fileName = file.originalname;
-        const imageUrl = `http://localhost:8080/propertyImagesUploads/${fileName}`
-        //const imageUrl = `https://insightwaveit-backend-p0cl.onrender.com/propertyImagesUploads/${fileName}`; // Use IP if accessed from Flutter
+        //const imageUrl = `http://localhost:8080/propertyImagesUploads/${fileName}`
+        const imageUrl = `https://insightwaveit-backend-p0cl.onrender.com/propertyImagesUploads/${fileName}`; // Use IP if accessed from Flutter
     
         // Save new record
         const newFile = {
