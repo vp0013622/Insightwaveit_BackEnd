@@ -28,7 +28,7 @@ import ReferenceSourceRouter from './Routes/referenceSourceRoutes.js'
 
 dotenv.config()
 const PORT = process.env.PORT
-const DB_CONNECTION_STRING = process.env.DB_CONNECTION_STRING
+var DB_CONNECTION_STRING = process.env.DB_CONNECTION_STRING
 const SALT = 10 // Added salt rounds for bcrypt
 
 const app = express()
@@ -189,6 +189,7 @@ app.use('/api/leadstatus',AuthMiddelware, LeadStatusRouter)
 app.use('/api/referancesource',AuthMiddelware, ReferenceSourceRouter)
 app.use('/api/leads',AuthMiddelware, LeadsRouter)
 
+//DB_CONNECTION_STRING = "mongodb+srv://devtechyugam:Rishi1234@insightwaveitcluster.k3nis1u.mongodb.net/?retryWrites=true&w=majority&appName=InsightwaveitCluster"
 // DB Connection with error handling
 mongoose.connect(DB_CONNECTION_STRING)
 .then((response)=>{
