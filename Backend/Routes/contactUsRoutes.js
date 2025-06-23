@@ -4,7 +4,7 @@ import { RoleAuthMiddleware } from '../Middlewares/RoleAuthMiddelware.js'
 
 const ContactUsRouter = express.Router()
 
-ContactUsRouter.post('/create', RoleAuthMiddleware("admin"), Create)
+ContactUsRouter.post('/create', Create) // RoleAuthMiddleware("admin"), 
 ContactUsRouter.get('/', RoleAuthMiddleware("admin", "executive", "sales"), GetAll)
 ContactUsRouter.get('/notpublished', RoleAuthMiddleware("admin"), GetAllNotPublished)
 ContactUsRouter.post('/withparams', RoleAuthMiddleware("admin", "executive", "sales"), GetAllWithParams)
