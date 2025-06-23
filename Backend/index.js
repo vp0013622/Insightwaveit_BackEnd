@@ -25,6 +25,7 @@ import LeadsRouter from './Routes/leadsRoutes.js'
 import FollowUpStatusRouter from './Routes/followUpStatusRoutes.js'
 import LeadStatusRouter from './Routes/leadStatusRoutes.js'
 import ReferenceSourceRouter from './Routes/referenceSourceRoutes.js'
+import ContactUsRouter from './Routes/contactUsRoutes.js'
 
 dotenv.config()
 const PORT = process.env.PORT
@@ -176,7 +177,7 @@ app.get('/api/auth/check', AuthMiddelware, async(req, res)=>{
 
 //file uploading
 app.use('/api/file/userprofilepicture', AuthMiddelware, RoleAuthMiddleware("admin", "sales", "executive", "user", "saller"), UserProfilePictureRouter)
-
+app.use('/api/contactus', ContactUsRouter)
 app.use('/api/auth', LoginRoute)
 app.use('/api/normaluser', RegisterNormalUserRouter)
 app.use('/api/users',AuthMiddelware, UsersRouter)
