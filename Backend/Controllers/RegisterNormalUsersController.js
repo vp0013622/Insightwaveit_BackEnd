@@ -40,8 +40,8 @@ const RegisterNormalUser = async (req, res) => {
       lastName: lastName,
       phoneNumber: phoneNumber,
       role: roleData._id,
-      createdByUserId: "guest",
-      updatedByUserId: "guest",
+      createdByUserId: "68163015624b09de23e942ad",
+      updatedByUserId: "68163015624b09de23e942ad",
       published: true,
     };
     const user = await UsersModel.create(newUser);
