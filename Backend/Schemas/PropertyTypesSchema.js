@@ -7,8 +7,8 @@ export const PropertyTypesSchema = mongoose.Schema(
         typeName: {
           type: String,
           required: true,
-          enum: ["APARTMENT", "HOUSE", "VILLA", "LAND", "COMMERCIAL"],
-          unique: true
+          unique: true,
+          trim: true
         },
         description: {
             type: String,

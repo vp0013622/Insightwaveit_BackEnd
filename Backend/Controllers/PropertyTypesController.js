@@ -148,7 +148,7 @@ const Edit = async (req, res) => {
         }
 
         const newPropertyType = {
-            typeName: typeName,
+            typeName: typeName.toUpperCase(),
             description: description || "",
             createdByUserId: req.user.id,
             updatedByUserId: req.user.id,
