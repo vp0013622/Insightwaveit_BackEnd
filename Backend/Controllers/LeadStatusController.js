@@ -11,7 +11,7 @@ export const Create = async (req, res) => {
         }
 
         const newStatus = new LeadStatusModel({
-            name,
+            name: name.toUpperCase(),
             description,
             createdByUserId: req.user.id,
             updatedByUserId: req.user.id,
@@ -79,7 +79,7 @@ export const Update = async (req, res) => {
             })
         }
 
-        status.name = name || status.name
+        status.name = name ? name.toUpperCase() : status.name
         status.description = description || status.description
         status.published = published !== undefined ? published : status.published
         status.updatedByUserId = req.user.id

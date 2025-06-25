@@ -28,7 +28,7 @@ const Create = async (req, res) => {
             propertyAddress: propertyAddress,
             owner: owner,
             price: price,
-            propertyStatus: propertyStatus,
+            propertyStatus: propertyStatus.toUpperCase(),
             features: features,
             listedDate: listedDate,
             createdByUserId: req.user.id,
@@ -159,7 +159,7 @@ const GetPropertyById = async (req, res) => {
 
 const Edit = async (req, res) => {
     try {
-        const { name, propertyTypeId, description, propertyAddress, owner, price, propertyStatus, features, listedDate} = req.body
+        const { name, propertyTypeId, description, propertyAddress, owner, price, propertyStatus, features, listedDate, published} = req.body
         if (!name || !propertyTypeId || !description || !propertyAddress || !owner || !price || !propertyStatus || !features || !listedDate) {
             return res.status(400).json({
                 message: 'bad request check data again',
@@ -180,12 +180,12 @@ const Edit = async (req, res) => {
             propertyAddress: propertyAddress,
             owner: owner,
             price: price,
-            propertyStatus: propertyStatus,
+            propertyStatus: propertyStatus.toUpperCase(),
             features: features,
             listedDate: property.listedDate,
             createdByUserId: property.createdByUserId,
-            updatedByUserId: req.usr.id,
-            published: published
+            updatedByUserId: req.user.id,
+            published: published !== undefined ? published : property.published
         }
         
         const result = await PropertyModel.findByIdAndUpdate(id, newProperty)

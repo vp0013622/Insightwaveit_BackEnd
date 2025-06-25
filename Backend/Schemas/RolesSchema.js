@@ -6,7 +6,6 @@ export const RolesSchema = mongoose.Schema(
     {
         name: {
           type: String,
-          enum: ['ADMIN', 'SALES', 'EXECUTIVE', 'USER', 'SALLER'],
           required: true,
           unique: true,
           trim: true

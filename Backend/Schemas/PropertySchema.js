@@ -46,8 +46,9 @@ export const PropertySchema = mongoose.Schema(
         },
         propertyStatus:{
           type: String,
-          enum: ['FOR SALE', 'FOR RENT', 'SOLD'],
-          required: true
+          required: true,
+          unique: true,
+          trim: true
         },
         features: {
           type: {

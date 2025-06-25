@@ -148,7 +148,7 @@ const Edit = async (req, res) => {
         }
 
         const newRole = {
-            name: name,
+            name: name.toUpperCase(),
             description: description || "",
             createdByUserId: req.user.id,
             updatedByUserId: req.user.id,

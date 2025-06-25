@@ -8,7 +8,9 @@ export const LeadsSchema = mongoose.Schema(
           ref: "UsersModel",
         },
         leadDesignation: {
-          enum: ["Buyer", "Tenant", "Other"],
+          type: String,
+          unique: true,
+          trim: true
         },
         leadInterestedPropertyId: {
           type: mongoose.Schema.Types.ObjectId,
