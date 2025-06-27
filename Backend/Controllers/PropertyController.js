@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 import { PropertyModel } from "../Models/PropertyModel.js"
 import * as dotenv from 'dotenv'
 import { PropertyImagesModel } from "../Models/PropertyImagesModel.js"
+import { ImageUploadService } from "../Services/ImageUploadService.js"
 dotenv.config()
 
 
@@ -264,13 +265,30 @@ const CreatePropertyImageByPropertyId = async (req, res) =>{
                 data: null
             });
         }
+
+        // Upload image to freeimage.host
+        const uploadResult = await ImageUploadService.uploadImage(file.buffer, file.originalname);
+        
+        if (!uploadResult.success) {
+            return res.status(500).json({
+                message: 'Failed to upload image',
+                error: uploadResult.error
+            });
+        }
     
-        // Save new record with image data in database
+        // Save new record with image URLs
         const newFile = {
           propertyId,
           fileName: file.originalname,
-          imageData: file.buffer, // Store the image buffer directly
-          mimeType: file.mimetype, // Store the MIME type
+          originalUrl: uploadResult.data.originalUrl,
+          thumbnailUrl: uploadResult.data.thumbnailUrl,
+          mediumUrl: uploadResult.data.mediumUrl,
+          displayUrl: uploadResult.data.displayUrl,
+          imageId: uploadResult.data.imageId,
+          size: uploadResult.data.size,
+          width: uploadResult.data.width,
+          height: uploadResult.data.height,
+          mimeType: uploadResult.data.mimeType,
           createdByUserId: req.user?.id,
           updatedByUserId: req.user?.id,
           published: true,
@@ -280,17 +298,7 @@ const CreatePropertyImageByPropertyId = async (req, res) =>{
     
         return res.status(200).json({
           message: 'property image added successfully',
-          data: {
-            _id: propertyImages._id,
-            propertyId: propertyImages.propertyId,
-            fileName: propertyImages.fileName,
-            mimeType: propertyImages.mimeType,
-            createdByUserId: propertyImages.createdByUserId,
-            updatedByUserId: propertyImages.updatedByUserId,
-            published: propertyImages.published,
-            createdAt: propertyImages.createdAt,
-            updatedAt: propertyImages.updatedAt
-          }
+          data: propertyImages
         });
     
       } catch (error) {
@@ -319,24 +327,11 @@ const GetAllPropertyImagesByPropertyId = async (req, res) =>{
         }
 
         const propertyImages = await PropertyImagesModel.find({ propertyId: propertyId })
-        
-        // Return image metadata without binary data
-        const imageMetadata = propertyImages.map(img => ({
-            _id: img._id,
-            propertyId: img.propertyId,
-            fileName: img.fileName,
-            mimeType: img.mimeType,
-            createdByUserId: img.createdByUserId,
-            updatedByUserId: img.updatedByUserId,
-            published: img.published,
-            createdAt: img.createdAt,
-            updatedAt: img.updatedAt
-        }));
 
         return res.status(200).json({
             message: 'property images by property',
-            count: imageMetadata.length,
-            data: imageMetadata
+            count: propertyImages.length,
+            data: propertyImages
         })
     }
     catch (error) {
@@ -433,35 +428,7 @@ const DeleteAllPropertyImageById = async (req, res) =>{
     }
 }
 
-const ServePropertyImage = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const propertyImage = await PropertyImagesModel.findById(id);
-        
-        if (!propertyImage || !propertyImage.published) {
-            return res.status(404).json({
-                message: 'Property image not found'
-            });
-        }
-
-        // Set the appropriate headers for image serving
-        res.set({
-            'Content-Type': propertyImage.mimeType,
-            'Content-Length': propertyImage.imageData.length,
-            'Cache-Control': 'public, max-age=31536000' // Cache for 1 year
-        });
-
-        // Send the image data
-        res.send(propertyImage.imageData);
-    } catch (error) {
-        res.status(500).json({
-            message: 'internal server error',
-            error: error.message
-        });
-    }
-};
-
 export {
     Create, GetAllProperty, GetAllNotPublishedProperty, GetAllPropertyWithParams, GetPropertyById, Edit, DeleteById,
-    CreatePropertyImageByPropertyId, GetAllPropertyImagesByPropertyId, GetPropertyImageById, DeletePropertyImageById, DeleteAllPropertyImageById, ServePropertyImage
+    CreatePropertyImageByPropertyId, GetAllPropertyImagesByPropertyId, GetPropertyImageById, DeletePropertyImageById, DeleteAllPropertyImageById
 }

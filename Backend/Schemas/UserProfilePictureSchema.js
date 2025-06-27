@@ -12,13 +12,39 @@ export const UserProfilePictureSchema = mongoose.Schema(
           type: String,
           trim: true
         },
-        imageData: {
-          type: Buffer,
-          required: true
+        originalUrl: {
+          type: String,
+          required: true,
+          trim: true
+        },
+        thumbnailUrl: {
+          type: String,
+          trim: true
+        },
+        mediumUrl: {
+          type: String,
+          trim: true
+        },
+        displayUrl: {
+          type: String,
+          trim: true
+        },
+        imageId: {
+          type: String,
+          trim: true
+        },
+        size: {
+          type: Number
+        },
+        width: {
+          type: Number
+        },
+        height: {
+          type: Number
         },
         mimeType: {
           type: String,
-          required: true
+          trim: true
         },
         createdByUserId: {
           type: mongoose.Schema.Types.ObjectId,
