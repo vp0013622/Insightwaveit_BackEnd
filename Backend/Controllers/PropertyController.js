@@ -252,34 +252,25 @@ const CreatePropertyImageByPropertyId = async (req, res) =>{
           });
         }
 
-        // Check for duplicate image by comparing filename (excluding the unique suffix)
-        const baseFileName = file.originalname.split('.')[0].split('-')[0]; // Get base filename without unique suffix
+        // Check for duplicate image by comparing filename
         const existingImages = await PropertyImagesModel.find({ 
             propertyId,
-            fileName: { $regex: new RegExp(`^${baseFileName}.*`) }
+            fileName: file.originalname
         });
 
         if (existingImages.length > 0) {
-            // Delete the uploaded file since it's a duplicate
-            const filePath = file.path;
-            if (fs.existsSync(filePath)) {
-                fs.unlinkSync(filePath);
-            }
             return res.status(400).json({
                 message: 'Duplicate image detected. This image already exists for this property.',
                 data: null
             });
         }
     
-        const fileName = file.originalname;
-        //const imageUrl = `http://localhost:8080/propertyImagesUploads/${fileName}`
-        const imageUrl = `https://insightwaveit-backend-p0cl.onrender.com/propertyImagesUploads/${fileName}`; // Use IP if accessed from Flutter
-    
-        // Save new record
+        // Save new record with image data in database
         const newFile = {
           propertyId,
-          fileName,
-          url: imageUrl,
+          fileName: file.originalname,
+          imageData: file.buffer, // Store the image buffer directly
+          mimeType: file.mimetype, // Store the MIME type
           createdByUserId: req.user?.id,
           updatedByUserId: req.user?.id,
           published: true,
@@ -289,18 +280,20 @@ const CreatePropertyImageByPropertyId = async (req, res) =>{
     
         return res.status(200).json({
           message: 'property image added successfully',
-          data: propertyImages,
+          data: {
+            _id: propertyImages._id,
+            propertyId: propertyImages.propertyId,
+            fileName: propertyImages.fileName,
+            mimeType: propertyImages.mimeType,
+            createdByUserId: propertyImages.createdByUserId,
+            updatedByUserId: propertyImages.updatedByUserId,
+            published: propertyImages.published,
+            createdAt: propertyImages.createdAt,
+            updatedAt: propertyImages.updatedAt
+          }
         });
     
       } catch (error) {
-        // If there's an error, ensure we clean up any uploaded file
-        if (req.file && req.file.path) {
-            try {
-                fs.unlinkSync(req.file.path);
-            } catch (unlinkError) {
-                console.error('Error deleting file:', unlinkError);
-            }
-        }
         return res.status(500).json({
           message: 'internal server error, while creating property image',
           error: error.message,
@@ -311,25 +304,39 @@ const CreatePropertyImageByPropertyId = async (req, res) =>{
 const GetAllPropertyImagesByPropertyId = async (req, res) =>{
     try {
         const { propertyId } = req.body
-        var proerty = null
+        var property = null
         if(propertyId){
             var result = await PropertyModel.findById(propertyId);
             if(result){
-                proerty = result
+                property = result
             }
         }   
-        if(proerty == null){
-            res.status(404).json({
+        if(property == null){
+            return res.status(404).json({
                 message: 'property not found, to search images by property',
-                data: proerty
+                data: property
             })
         }
 
         const propertyImages = await PropertyImagesModel.find({ propertyId: propertyId })
+        
+        // Return image metadata without binary data
+        const imageMetadata = propertyImages.map(img => ({
+            _id: img._id,
+            propertyId: img.propertyId,
+            fileName: img.fileName,
+            mimeType: img.mimeType,
+            createdByUserId: img.createdByUserId,
+            updatedByUserId: img.updatedByUserId,
+            published: img.published,
+            createdAt: img.createdAt,
+            updatedAt: img.updatedAt
+        }));
+
         return res.status(200).json({
             message: 'property images by property',
-            count: propertyImages.length,
-            data: propertyImages
+            count: imageMetadata.length,
+            data: imageMetadata
         })
     }
     catch (error) {
@@ -425,7 +432,36 @@ const DeleteAllPropertyImageById = async (req, res) =>{
         })
     }
 }
+
+const ServePropertyImage = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const propertyImage = await PropertyImagesModel.findById(id);
+        
+        if (!propertyImage || !propertyImage.published) {
+            return res.status(404).json({
+                message: 'Property image not found'
+            });
+        }
+
+        // Set the appropriate headers for image serving
+        res.set({
+            'Content-Type': propertyImage.mimeType,
+            'Content-Length': propertyImage.imageData.length,
+            'Cache-Control': 'public, max-age=31536000' // Cache for 1 year
+        });
+
+        // Send the image data
+        res.send(propertyImage.imageData);
+    } catch (error) {
+        res.status(500).json({
+            message: 'internal server error',
+            error: error.message
+        });
+    }
+};
+
 export {
     Create, GetAllProperty, GetAllNotPublishedProperty, GetAllPropertyWithParams, GetPropertyById, Edit, DeleteById,
-    CreatePropertyImageByPropertyId, GetAllPropertyImagesByPropertyId, GetPropertyImageById, DeletePropertyImageById, DeleteAllPropertyImageById
+    CreatePropertyImageByPropertyId, GetAllPropertyImagesByPropertyId, GetPropertyImageById, DeletePropertyImageById, DeleteAllPropertyImageById, ServePropertyImage
 }

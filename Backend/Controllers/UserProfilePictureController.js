@@ -13,7 +13,6 @@ const Create = async (req, res) => {
     const { userId } = req.body;
     const file = req.file;
 
-
     // Validation
     if (!userId || !file) {
       return res.status(400).json({
@@ -21,29 +20,20 @@ const Create = async (req, res) => {
       });
     }
 
-    const fileName = file.originalname;
-    //const imageUrl = `http://localhost:8080/profileImages/${fileName}`
-    const imageUrl = `https://insightwaveit-backend-p0cl.onrender.com/profileImages/${fileName}`; // Use IP if accessed from Flutter
-
     // Check if user already has a profile picture
     const existing = await UserProfilePictureModel.findOne({ userId });
 
     if (existing) {
-      // Delete old image file from uploads folder
-      const oldFilePath = path.join(__dirname, '../profileImages', existing.fileName);
-      if (fs.existsSync(oldFilePath)) {
-        fs.unlinkSync(oldFilePath);
-      }
-
-      // Optionally remove DB entry (or you can update instead)
+      // Remove old profile picture from database
       await UserProfilePictureModel.deleteOne({ _id: existing._id });
     }
 
-    // Save new record
+    // Save new record with image data in database
     const newFile = {
       userId,
-      fileName,
-      url: imageUrl,
+      fileName: file.originalname,
+      imageData: file.buffer, // Store the image buffer directly
+      mimeType: file.mimetype, // Store the MIME type
       createdByUserId: req.user?.id,
       updatedByUserId: req.user?.id,
       published: true,
@@ -53,11 +43,20 @@ const Create = async (req, res) => {
 
     return res.status(200).json({
       message: 'user profile picture added successfully',
-      data: UserProfilePicture,
+      data: {
+        _id: UserProfilePicture._id,
+        userId: UserProfilePicture.userId,
+        fileName: UserProfilePicture.fileName,
+        mimeType: UserProfilePicture.mimeType,
+        createdByUserId: UserProfilePicture.createdByUserId,
+        updatedByUserId: UserProfilePicture.updatedByUserId,
+        published: UserProfilePicture.published,
+        createdAt: UserProfilePicture.createdAt,
+        updatedAt: UserProfilePicture.updatedAt
+      },
     });
 
   } catch (error) {
-    //console.log(error.message,)
     return res.status(500).json({
       message: 'internal server error, while creating profile',
       error: error.message,
@@ -69,10 +68,24 @@ const Create = async (req, res) => {
 const GetAllUserProfilePicture = async (req, res) => {
     try {
         const userProfilePictures = await UserProfilePictureModel.find({ published: true });
+        
+        // Return image metadata without binary data
+        const imageMetadata = userProfilePictures.map(img => ({
+            _id: img._id,
+            userId: img.userId,
+            fileName: img.fileName,
+            mimeType: img.mimeType,
+            createdByUserId: img.createdByUserId,
+            updatedByUserId: img.updatedByUserId,
+            published: img.published,
+            createdAt: img.createdAt,
+            updatedAt: img.updatedAt
+        }));
+
         return res.status(200).json({
             message: 'all user profile pictures',
-            count: userProfilePictures.length,
-            data: userProfilePictures
+            count: imageMetadata.length,
+            data: imageMetadata
         })
     }
     catch (error) {
@@ -86,16 +99,12 @@ const GetAllUserProfilePicture = async (req, res) => {
 const GetAllUserProfilePictureWithParams = async (req, res) => {
     try {
 
-        const { fileName = null, url = null, createdByUserId = null, updatedByUserId = null, published = null} = req.body
+        const { fileName = null, createdByUserId = null, updatedByUserId = null, published = null} = req.body
 
         let filter = {}
 
         if (fileName !== null) {
             filter.fileName = { $regex: fileName, $options: "i" }
-        }
-
-        if (url !== null) {
-            filter.url = { $regex: url, $options: "i" }
         }
 
         if (createdByUserId !== null) {
@@ -112,10 +121,23 @@ const GetAllUserProfilePictureWithParams = async (req, res) => {
 
         const userProfilePicture = await UserProfilePictureModel.find(filter);
 
+        // Return image metadata without binary data
+        const imageMetadata = userProfilePicture.map(img => ({
+            _id: img._id,
+            userId: img.userId,
+            fileName: img.fileName,
+            mimeType: img.mimeType,
+            createdByUserId: img.createdByUserId,
+            updatedByUserId: img.updatedByUserId,
+            published: img.published,
+            createdAt: img.createdAt,
+            updatedAt: img.updatedAt
+        }));
+
         return res.status(200).json({
             message: 'all user profile picture',
-            count: userProfilePicture.length,
-            data: userProfilePicture
+            count: imageMetadata.length,
+            data: imageMetadata
         })
     }
     catch (error) {
@@ -138,7 +160,17 @@ const GetUserProfilePictureById = async (req, res) => {
         }
         return res.status(200).json({
             message: 'user profile picture found',
-            data: userProfilePicture
+            data: {
+                _id: userProfilePicture._id,
+                userId: userProfilePicture.userId,
+                fileName: userProfilePicture.fileName,
+                mimeType: userProfilePicture.mimeType,
+                createdByUserId: userProfilePicture.createdByUserId,
+                updatedByUserId: userProfilePicture.updatedByUserId,
+                published: userProfilePicture.published,
+                createdAt: userProfilePicture.createdAt,
+                updatedAt: userProfilePicture.updatedAt
+            }
         })
     }
     catch (error) {
@@ -164,22 +196,12 @@ const Edit = async (req, res) => {
       return res.status(404).json({ message: 'User profile picture not found' });
     }
 
-    // Delete old file from uploads directory
-    const oldFilePath = path.join(__dirname, '../profileImages', userProfilePicture.fileName);
-    if (fs.existsSync(oldFilePath)) {
-      fs.unlinkSync(oldFilePath);
-      console.log('Old profile picture deleted:', userProfilePicture.fileName);
-    }
-
-    // New image data
-    const fileName = file.originalname;
-    //const imageUrl = `http://localhost:8080/profileImages/${fileName}`;
-    const imageUrl = `https://insightwaveit-backend-p0cl.onrender.com/profileImages/${fileName}`
-
+    // Update with new image data
     const updatedData = {
       userId: userProfilePicture.userId,
-      fileName: fileName,
-      url: imageUrl,
+      fileName: file.originalname,
+      imageData: file.buffer, // Store the new image buffer
+      mimeType: file.mimetype, // Store the new MIME type
       createdByUserId: userProfilePicture.createdByUserId,
       updatedByUserId: req.user?.id || userId,
       published: true,
@@ -189,13 +211,51 @@ const Edit = async (req, res) => {
 
     return res.status(200).json({
       message: 'User profile picture updated successfully',
-      data: result,
+      data: {
+        _id: result._id,
+        userId: result.userId,
+        fileName: result.fileName,
+        mimeType: result.mimeType,
+        createdByUserId: result.createdByUserId,
+        updatedByUserId: result.updatedByUserId,
+        published: result.published,
+        createdAt: result.createdAt,
+        updatedAt: result.updatedAt
+      },
     });
   } catch (error) {
     console.error('Edit error:', error);
     return res.status(500).json({
       message: 'Internal server error',
       error: error.message,
+    });
+  }
+};
+
+const ServeProfileImage = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userProfilePicture = await UserProfilePictureModel.findById(id);
+    
+    if (!userProfilePicture || !userProfilePicture.published) {
+      return res.status(404).json({
+        message: 'Profile image not found'
+      });
+    }
+
+    // Set the appropriate headers for image serving
+    res.set({
+      'Content-Type': userProfilePicture.mimeType,
+      'Content-Length': userProfilePicture.imageData.length,
+      'Cache-Control': 'public, max-age=31536000' // Cache for 1 year
+    });
+
+    // Send the image data
+    res.send(userProfilePicture.imageData);
+  } catch (error) {
+    res.status(500).json({
+      message: 'internal server error',
+      error: error.message
     });
   }
 };
@@ -233,5 +293,5 @@ const DeleteById = async (req, res) => {
 }
 
 export { 
-    Create, GetAllUserProfilePicture, GetAllUserProfilePictureWithParams, GetUserProfilePictureById, Edit, DeleteById
+    Create, GetAllUserProfilePicture, GetAllUserProfilePictureWithParams, GetUserProfilePictureById, Edit, DeleteById, ServeProfileImage
 }

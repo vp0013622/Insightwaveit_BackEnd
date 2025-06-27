@@ -38,47 +38,11 @@ const app = express()
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Ensure directories exist
-const profileImagesDir = path.join(__dirname, 'profileImages');
-const propertyImagesDir = path.join(__dirname, 'propertyImagesUploads');
-
-// Create directories if they don't exist
-if (!fs.existsSync(profileImagesDir)) {
-    fs.mkdirSync(profileImagesDir, { recursive: true });
-}
-if (!fs.existsSync(propertyImagesDir)) {
-    fs.mkdirSync(propertyImagesDir, { recursive: true });
-}
-
 //middle ware for parsing json request:
 app.use(express.json())
 
 //middle ware for cores policy: default * to allow all routes
 app.use(cors());
-
-// Static file serving - BEFORE ANY ROUTE HANDLERS
-app.use('/profileImages', express.static(profileImagesDir));
-app.use('/propertyImagesUploads', express.static(propertyImagesDir));
-
-// Test route for checking image existence
-app.get('/check-image/:filename', (req, res) => {
-    const filename = req.params.filename;
-    const imagePath = path.join(profileImagesDir, filename);
-    
-    if (fs.existsSync(imagePath)) {
-        res.json({
-            exists: true,
-            path: imagePath,
-            size: fs.statSync(imagePath).size + ' bytes'
-        });
-    } else {
-        res.status(404).json({
-            exists: false,
-            path: imagePath,
-            error: 'Image not found'
-        });
-    }
-});
 
 //defult route.
 app.get('/', (req, res)=>{

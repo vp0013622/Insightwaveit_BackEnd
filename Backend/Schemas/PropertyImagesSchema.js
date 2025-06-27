@@ -12,9 +12,13 @@ export const PropertyImagesSchema = mongoose.Schema(
           type: String,
           trim: true
         },
-        url:{
+        imageData: {
+          type: Buffer,
+          required: true
+        },
+        mimeType: {
           type: String,
-          trim: true
+          required: true
         },
         createdByUserId: {
           type: mongoose.Schema.Types.ObjectId,
