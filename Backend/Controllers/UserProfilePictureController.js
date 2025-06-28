@@ -25,12 +25,17 @@ const Create = async (req, res) => {
     const existing = await UserProfilePictureModel.findOne({ userId });
 
     if (existing) {
+      // Delete old image from Cloudinary if it exists
+      if (existing.cloudinaryId) {
+        await ImageUploadService.deleteImage(existing.cloudinaryId);
+      }
+      
       // Remove old profile picture from database
       await UserProfilePictureModel.deleteOne({ _id: existing._id });
     }
 
-    // Upload image to freeimage.host
-    const uploadResult = await ImageUploadService.uploadImage(file.buffer, file.originalname);
+    // Upload image to Cloudinary
+    const uploadResult = await ImageUploadService.uploadProfilePicture(file.buffer, file.originalname);
     
     if (!uploadResult.success) {
         return res.status(500).json({
@@ -48,6 +53,7 @@ const Create = async (req, res) => {
       mediumUrl: uploadResult.data.mediumUrl,
       displayUrl: uploadResult.data.displayUrl,
       imageId: uploadResult.data.imageId,
+      cloudinaryId: uploadResult.data.cloudinaryId,
       size: uploadResult.data.size,
       width: uploadResult.data.width,
       height: uploadResult.data.height,
@@ -168,8 +174,13 @@ const Edit = async (req, res) => {
       return res.status(404).json({ message: 'User profile picture not found' });
     }
 
-    // Upload new image to freeimage.host
-    const uploadResult = await ImageUploadService.uploadImage(file.buffer, file.originalname);
+    // Delete old image from Cloudinary if it exists
+    if (userProfilePicture.cloudinaryId) {
+      await ImageUploadService.deleteImage(userProfilePicture.cloudinaryId);
+    }
+
+    // Upload new image to Cloudinary
+    const uploadResult = await ImageUploadService.uploadProfilePicture(file.buffer, file.originalname);
     
     if (!uploadResult.success) {
         return res.status(500).json({
@@ -187,6 +198,7 @@ const Edit = async (req, res) => {
       mediumUrl: uploadResult.data.mediumUrl,
       displayUrl: uploadResult.data.displayUrl,
       imageId: uploadResult.data.imageId,
+      cloudinaryId: uploadResult.data.cloudinaryId,
       size: uploadResult.data.size,
       width: uploadResult.data.width,
       height: uploadResult.data.height,
@@ -221,6 +233,12 @@ const DeleteById = async (req, res) => {
                 data: userProfilePicture
             })
         }
+
+        // Delete image from Cloudinary if it exists
+        if (userProfilePicture.cloudinaryId) {
+            await ImageUploadService.deleteImage(userProfilePicture.cloudinaryId);
+        }
+
         userProfilePicture.updatedByUserId = req.user.id
         userProfilePicture.published = false
         const result = await UserProfilePictureModel.findByIdAndUpdate(id, userProfilePicture)

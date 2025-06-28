@@ -266,8 +266,8 @@ const CreatePropertyImageByPropertyId = async (req, res) =>{
             });
         }
 
-        // Upload image to freeimage.host
-        const uploadResult = await ImageUploadService.uploadImage(file.buffer, file.originalname);
+        // Upload image to Cloudinary
+        const uploadResult = await ImageUploadService.uploadPropertyImage(file.buffer, file.originalname);
         
         if (!uploadResult.success) {
             return res.status(500).json({
@@ -285,6 +285,7 @@ const CreatePropertyImageByPropertyId = async (req, res) =>{
           mediumUrl: uploadResult.data.mediumUrl,
           displayUrl: uploadResult.data.displayUrl,
           imageId: uploadResult.data.imageId,
+          cloudinaryId: uploadResult.data.cloudinaryId,
           size: uploadResult.data.size,
           width: uploadResult.data.width,
           height: uploadResult.data.height,
@@ -375,6 +376,12 @@ const DeletePropertyImageById = async (req, res) =>{
                 data: propertyImage
             })
         }
+
+        // Delete image from Cloudinary if it exists
+        if (propertyImage.cloudinaryId) {
+            await ImageUploadService.deleteImage(propertyImage.cloudinaryId);
+        }
+
         propertyImage.updatedByUserId = req.user.id
         propertyImage.published = false
         const result = await PropertyImagesModel.findByIdAndUpdate(id, propertyImage)

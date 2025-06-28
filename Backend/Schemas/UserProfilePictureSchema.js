@@ -33,6 +33,10 @@ export const UserProfilePictureSchema = mongoose.Schema(
           type: String,
           trim: true
         },
+        cloudinaryId: {
+          type: String,
+          trim: true
+        },
         size: {
           type: Number
         },

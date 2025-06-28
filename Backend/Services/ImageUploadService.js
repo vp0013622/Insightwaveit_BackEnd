@@ -1,63 +1,148 @@
-import axios from 'axios';
-import FormData from 'form-data';
+import { v2 as cloudinary } from 'cloudinary';
 
-const FREEIMAGE_API_KEY = '6d207e02198a847aa98d0a2a901485a5';
-const FREEIMAGE_API_URL = 'https://freeimage.host/api/1/upload';
+// Cloudinary Configuration
+cloudinary.config({ 
+    cloud_name: 'doaqk3uzf', 
+    api_key: '432491213828981', 
+    api_secret: 'y1b0BgyCVUbjKJe1pdGtoyhihp8'
+});
 
 export class ImageUploadService {
     /**
-     * Upload image to freeimage.host
+     * Upload image to Cloudinary
      * @param {Buffer} imageBuffer - The image buffer
      * @param {string} originalName - Original filename
+     * @param {string} folder - Folder to upload to (optional)
      * @returns {Promise<Object>} Upload response with image URLs
      */
-    static async uploadImage(imageBuffer, originalName) {
+    static async uploadImage(imageBuffer, originalName, folder = 'insightwaveit') {
         try {
-            const formData = new FormData();
-            formData.append('key', FREEIMAGE_API_KEY);
-            formData.append('action', 'upload');
-            formData.append('format', 'json');
+            // Convert buffer to base64
+            const base64Image = `data:${this.getMimeType(originalName)};base64,${imageBuffer.toString('base64')}`;
             
-            // Append the image file
-            formData.append('source', imageBuffer, {
-                filename: originalName,
-                contentType: this.getMimeType(originalName)
+            // Upload to Cloudinary
+            const uploadResult = await cloudinary.uploader.upload(base64Image, {
+                folder: folder,
+                public_id: this.generatePublicId(originalName),
+                resource_type: 'image',
+                transformation: [
+                    { quality: 'auto', fetch_format: 'auto' }
+                ]
             });
 
-            const response = await axios.post(FREEIMAGE_API_URL, formData, {
-                headers: {
-                    ...formData.getHeaders(),
-                },
-                maxContentLength: Infinity,
-                maxBodyLength: Infinity
+            // Generate different size URLs
+            const originalUrl = cloudinary.url(uploadResult.public_id, {
+                secure: true,
+                resource_type: 'image'
             });
 
-            if (response.data.status_code === 200 && response.data.success) {
-                return {
-                    success: true,
-                    data: {
-                        originalUrl: response.data.image.url,
-                        thumbnailUrl: response.data.image.thumb.url,
-                        mediumUrl: response.data.image.medium.url,
-                        displayUrl: response.data.image.display_url,
-                        imageId: response.data.image.id_encoded,
-                        filename: response.data.image.filename,
-                        size: response.data.image.size,
-                        width: response.data.image.width,
-                        height: response.data.image.height,
-                        mimeType: response.data.image.mime
-                    }
-                };
-            } else {
-                throw new Error('Upload failed: ' + (response.data.status_txt || 'Unknown error'));
-            }
+            const thumbnailUrl = cloudinary.url(uploadResult.public_id, {
+                secure: true,
+                resource_type: 'image',
+                width: 150,
+                height: 150,
+                crop: 'fill',
+                quality: 'auto'
+            });
+
+            const mediumUrl = cloudinary.url(uploadResult.public_id, {
+                secure: true,
+                resource_type: 'image',
+                width: 300,
+                height: 300,
+                crop: 'fill',
+                quality: 'auto'
+            });
+
+            const displayUrl = cloudinary.url(uploadResult.public_id, {
+                secure: true,
+                resource_type: 'image',
+                width: 800,
+                height: 600,
+                crop: 'fill',
+                quality: 'auto'
+            });
+
+            return {
+                success: true,
+                data: {
+                    originalUrl: originalUrl,
+                    thumbnailUrl: thumbnailUrl,
+                    mediumUrl: mediumUrl,
+                    displayUrl: displayUrl,
+                    imageId: uploadResult.public_id,
+                    filename: uploadResult.original_filename,
+                    size: uploadResult.bytes,
+                    width: uploadResult.width,
+                    height: uploadResult.height,
+                    mimeType: uploadResult.format,
+                    cloudinaryId: uploadResult.public_id,
+                    secureUrl: uploadResult.secure_url
+                }
+            };
         } catch (error) {
-            console.error('Image upload error:', error);
+            console.error('Cloudinary upload error:', error);
             return {
                 success: false,
                 error: error.message
             };
         }
+    }
+
+    /**
+     * Upload profile picture to Cloudinary
+     * @param {Buffer} imageBuffer - The image buffer
+     * @param {string} originalName - Original filename
+     * @returns {Promise<Object>} Upload response with image URLs
+     */
+    static async uploadProfilePicture(imageBuffer, originalName) {
+        return this.uploadImage(imageBuffer, originalName, 'insightwaveit/profile-pictures');
+    }
+
+    /**
+     * Upload property image to Cloudinary
+     * @param {Buffer} imageBuffer - The image buffer
+     * @param {string} originalName - Original filename
+     * @returns {Promise<Object>} Upload response with image URLs
+     */
+    static async uploadPropertyImage(imageBuffer, originalName) {
+        return this.uploadImage(imageBuffer, originalName, 'insightwaveit/property-images');
+    }
+
+    /**
+     * Delete image from Cloudinary
+     * @param {string} publicId - Cloudinary public ID
+     * @returns {Promise<Object>} Delete response
+     */
+    static async deleteImage(publicId) {
+        try {
+            const result = await cloudinary.uploader.destroy(publicId, {
+                resource_type: 'image'
+            });
+            
+            return {
+                success: true,
+                data: result
+            };
+        } catch (error) {
+            console.error('Cloudinary delete error:', error);
+            return {
+                success: false,
+                error: error.message
+            };
+        }
+    }
+
+    /**
+     * Generate a unique public ID for Cloudinary
+     * @param {string} filename 
+     * @returns {string} Public ID
+     */
+    static generatePublicId(filename) {
+        const timestamp = Date.now();
+        const randomString = Math.random().toString(36).substring(2, 15);
+        const extension = filename.split('.').pop();
+        return `${timestamp}_${randomString}.${extension}`;
     }
 
     /**
