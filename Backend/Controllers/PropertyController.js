@@ -249,7 +249,13 @@ const CreatePropertyImageByPropertyId = async (req, res) =>{
         // Validation
         if (!propertyId || !file) {
           return res.status(400).json({
-            message: 'bad request',
+            message: 'Validation failed: Property ID and image file are required',
+            data: {
+              missingFields: {
+                propertyId: !propertyId ? 'Property ID is required' : null,
+                file: !file ? 'Property image file is required' : null
+              }
+            }
           });
         }
 
@@ -260,9 +266,12 @@ const CreatePropertyImageByPropertyId = async (req, res) =>{
         });
 
         if (existingImages.length > 0) {
-            return res.status(400).json({
-                message: 'Duplicate image detected. This image already exists for this property.',
-                data: null
+            return res.status(409).json({
+                message: 'Duplicate image detected: This image file already exists for the specified property',
+                data: {
+                  fileName: file.originalname,
+                  propertyId: propertyId
+                }
             });
         }
 
@@ -271,8 +280,12 @@ const CreatePropertyImageByPropertyId = async (req, res) =>{
         
         if (!uploadResult.success) {
             return res.status(500).json({
-                message: 'Failed to upload image',
-                error: uploadResult.error
+                message: 'Property image upload failed: Unable to process image file',
+                error: uploadResult.error,
+                data: {
+                  fileName: file.originalname,
+                  fileSize: file.size
+                }
             });
         }
     
@@ -297,14 +310,14 @@ const CreatePropertyImageByPropertyId = async (req, res) =>{
     
         const propertyImages = await PropertyImagesModel.create(newFile);
     
-        return res.status(200).json({
-          message: 'property image added successfully',
+        return res.status(201).json({
+          message: 'Property image uploaded successfully and saved to database',
           data: propertyImages
         });
     
       } catch (error) {
         return res.status(500).json({
-          message: 'internal server error, while creating property image',
+          message: 'Internal server error: Failed to create property image',
           error: error.message,
         });
       }
@@ -322,22 +335,22 @@ const GetAllPropertyImagesByPropertyId = async (req, res) =>{
         }   
         if(property == null){
             return res.status(404).json({
-                message: 'property not found, to search images by property',
-                data: property
+                message: 'Property not found: Unable to retrieve images for non-existent property',
+                data: null
             })
         }
 
         const propertyImages = await PropertyImagesModel.find({ propertyId: propertyId })
 
         return res.status(200).json({
-            message: 'property images by property',
+            message: 'Property images retrieved successfully for the specified property',
             count: propertyImages.length,
             data: propertyImages
         })
     }
     catch (error) {
         res.status(500).json({
-            message: 'internal server error',
+            message: 'Internal server error: Failed to retrieve property images',
             error: error.message
         })
     }
@@ -349,18 +362,18 @@ const GetPropertyImageById = async (req, res) =>{
         const propertyImage = await PropertyImagesModel.findById(id)
         if (propertyImage == null) {
             return res.status(404).json({
-                message: 'property image not found',
-                data: propertyImage
+                message: 'Property image not found: The specified image record does not exist',
+                data: null
             })
         }
         return res.status(200).json({
-            message: 'property image found',
+            message: 'Property image retrieved successfully',
             data: propertyImage
         })
     }
     catch (error) {
         res.status(500).json({
-            message: 'internal server error',
+            message: 'Internal server error: Failed to retrieve property image by ID',
             error: error.message
         })
     }
@@ -372,8 +385,8 @@ const DeletePropertyImageById = async (req, res) =>{
         const propertyImage = await PropertyImagesModel.findById(id)
         if (propertyImage == null) {
             return res.status(404).json({
-                message: 'property image not found',
-                data: propertyImage
+                message: 'Property image not found: The specified image record does not exist',
+                data: null
             })
         }
 
@@ -387,16 +400,16 @@ const DeletePropertyImageById = async (req, res) =>{
         const result = await PropertyImagesModel.findByIdAndUpdate(id, propertyImage)
         if (!result) {
             return res.status(404).json({
-                message: 'property image not found'
+                message: 'Property image not found: Unable to locate record for deletion'
             })
         }
-        return res.status(201).json({
-            message: 'property image deleted successfully'
+        return res.status(200).json({
+            message: 'Property image deleted successfully and removed from cloud storage'
         })
     }
     catch (error) {
         res.status(500).json({
-            message: 'internal server error',
+            message: 'Internal server error: Failed to delete property image',
             error: error.message
         })
     }

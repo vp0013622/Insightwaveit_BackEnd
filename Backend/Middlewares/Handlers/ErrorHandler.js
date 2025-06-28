@@ -101,7 +101,12 @@ export const errorHandler = (err, req, res, next) => {
 
     // Send error response
     res.status(err.status || 500).json({
-        message: 'Internal server error',
-        error: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
+        message: err.status === 404 ? 'Resource not found: The requested endpoint or resource does not exist' : 
+                 err.status === 400 ? 'Bad request: Invalid request parameters or missing required fields' :
+                 err.status === 401 ? 'Unauthorized: Authentication required to access this resource' :
+                 err.status === 403 ? 'Forbidden: Insufficient permissions to access this resource' :
+                 err.status === 409 ? 'Conflict: Resource already exists or conflicts with current state' :
+                 'Internal server error: An unexpected error occurred while processing your request',
+        error: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong on our end. Please try again later.'
     });
 }; 

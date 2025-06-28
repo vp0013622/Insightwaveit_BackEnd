@@ -17,7 +17,13 @@ const Create = async (req, res) => {
     // Validation
     if (!userId || !file) {
       return res.status(400).json({
-        message: 'bad request',
+        message: 'Validation failed: User ID and profile picture file are required',
+        data: {
+          missingFields: {
+            userId: !userId ? 'User ID is required' : null,
+            file: !file ? 'Profile picture file is required' : null
+          }
+        }
       });
     }
 
@@ -39,8 +45,12 @@ const Create = async (req, res) => {
     
     if (!uploadResult.success) {
         return res.status(500).json({
-            message: 'Failed to upload image',
-            error: uploadResult.error
+            message: 'Profile picture upload failed: Unable to process image file',
+            error: uploadResult.error,
+            data: {
+              fileName: file.originalname,
+              fileSize: file.size
+            }
         });
     }
 
@@ -65,14 +75,14 @@ const Create = async (req, res) => {
 
     const UserProfilePicture = await UserProfilePictureModel.create(newFile);
 
-    return res.status(200).json({
-      message: 'user profile picture added successfully',
+    return res.status(201).json({
+      message: 'Profile picture uploaded successfully and saved to database',
       data: UserProfilePicture,
     });
 
   } catch (error) {
     return res.status(500).json({
-      message: 'internal server error, while creating profile',
+      message: 'Internal server error: Failed to create user profile picture',
       error: error.message,
     });
   }
@@ -84,14 +94,14 @@ const GetAllUserProfilePicture = async (req, res) => {
         const userProfilePictures = await UserProfilePictureModel.find({ published: true });
 
         return res.status(200).json({
-            message: 'all user profile pictures',
+            message: 'All user profile pictures retrieved successfully',
             count: userProfilePictures.length,
             data: userProfilePictures
         })
     }
     catch (error) {
         res.status(500).json({
-            message: 'internal server error',
+            message: 'Internal server error: Failed to retrieve user profile pictures',
             error: error.message
         })
     }
@@ -123,14 +133,14 @@ const GetAllUserProfilePictureWithParams = async (req, res) => {
         const userProfilePicture = await UserProfilePictureModel.find(filter);
 
         return res.status(200).json({
-            message: 'all user profile picture',
+            message: 'User profile pictures filtered and retrieved successfully',
             count: userProfilePicture.length,
             data: userProfilePicture
         })
     }
     catch (error) {
         res.status(500).json({
-            message: 'internal server error',
+            message: 'Internal server error: Failed to retrieve filtered user profile pictures',
             error: error.message
         })
     }
@@ -142,18 +152,18 @@ const GetUserProfilePictureById = async (req, res) => {
         const userProfilePicture = await UserProfilePictureModel.findOne({userId: id})
         if (userProfilePicture == null) {
             return res.status(404).json({
-                message: 'user profile picture not found',
-                data: userProfilePicture
+                message: 'User profile picture not found: No profile picture exists for the specified user ID',
+                data: null
             })
         }
         return res.status(200).json({
-            message: 'user profile picture found',
+            message: 'User profile picture retrieved successfully',
             data: userProfilePicture
         })
     }
     catch (error) {
         res.status(500).json({
-            message: 'internal server error',
+            message: 'Internal server error: Failed to retrieve user profile picture by ID',
             error: error.message
         })
     }
@@ -166,12 +176,23 @@ const Edit = async (req, res) => {
     const { id } = req.params;
 
     if (!userId || !file || !id) {
-      return res.status(400).json({ message: 'bad request' });
+      return res.status(400).json({ 
+        message: 'Validation failed: User ID, profile picture file, and record ID are required',
+        data: {
+          missingFields: {
+            userId: !userId ? 'User ID is required' : null,
+            file: !file ? 'Profile picture file is required' : null,
+            id: !id ? 'Record ID is required' : null
+          }
+        }
+      });
     }
 
     const userProfilePicture = await UserProfilePictureModel.findById(id);
     if (!userProfilePicture) {
-      return res.status(404).json({ message: 'User profile picture not found' });
+      return res.status(404).json({ 
+        message: 'User profile picture not found: The specified profile picture record does not exist' 
+      });
     }
 
     // Delete old image from Cloudinary if it exists
@@ -184,8 +205,12 @@ const Edit = async (req, res) => {
     
     if (!uploadResult.success) {
         return res.status(500).json({
-            message: 'Failed to upload image',
-            error: uploadResult.error
+            message: 'Profile picture update failed: Unable to process new image file',
+            error: uploadResult.error,
+            data: {
+              fileName: file.originalname,
+              fileSize: file.size
+            }
         });
     }
 
@@ -211,13 +236,13 @@ const Edit = async (req, res) => {
     const result = await UserProfilePictureModel.findByIdAndUpdate(id, updatedData, { new: true });
 
     return res.status(200).json({
-      message: 'User profile picture updated successfully',
+      message: 'User profile picture updated successfully with new image',
       data: result,
     });
   } catch (error) {
     console.error('Edit error:', error);
     return res.status(500).json({
-      message: 'Internal server error',
+      message: 'Internal server error: Failed to update user profile picture',
       error: error.message,
     });
   }
@@ -229,8 +254,8 @@ const DeleteById = async (req, res) => {
         const userProfilePicture = await UserProfilePictureModel.findById(id)
         if (userProfilePicture == null) {
             return res.status(404).json({
-                message: 'user profile picture not found',
-                data: userProfilePicture
+                message: 'User profile picture not found: The specified profile picture record does not exist',
+                data: null
             })
         }
 
@@ -244,18 +269,18 @@ const DeleteById = async (req, res) => {
         const result = await UserProfilePictureModel.findByIdAndUpdate(id, userProfilePicture)
         if (!result) {
             return res.status(404).json({
-                message: 'user profile picture not found'
+                message: 'User profile picture not found: Unable to locate record for deletion'
             })
         }
-        return res.status(201).json({
-            message: 'user profile picture deleted successfully'
+        return res.status(200).json({
+            message: 'User profile picture deleted successfully and removed from cloud storage'
         })
         
 
     }
     catch (error) {
         res.status(500).json({
-            message: 'internal server error',
+            message: 'Internal server error: Failed to delete user profile picture',
             error: error.message
         })
     }
