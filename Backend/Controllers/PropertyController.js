@@ -325,7 +325,7 @@ const CreatePropertyImageByPropertyId = async (req, res) =>{
 
 const GetAllPropertyImagesByPropertyId = async (req, res) =>{
     try {
-        const { propertyId } = req.body
+        const { id: propertyId } = req.params
         var property = null
         if(propertyId){
             var result = await PropertyModel.findById(propertyId);

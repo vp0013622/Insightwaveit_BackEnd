@@ -9,15 +9,17 @@ PropertyRouter.post('/create',  RoleAuthMiddleware("admin", "executive"), Create
 PropertyRouter.get('/',  RoleAuthMiddleware("admin", "sales", "executive", "saller", "user"),  GetAllProperty)
 PropertyRouter.get('/notpublishedproperties', RoleAuthMiddleware("admin"), GetAllNotPublishedProperty)
 PropertyRouter.post('/withparams', RoleAuthMiddleware("admin","executive"), GetAllPropertyWithParams)
-PropertyRouter.get('/:id', RoleAuthMiddleware("admin", "sales", "executive", "saller", "user"), GetPropertyById)
-PropertyRouter.put('/edit/:id', RoleAuthMiddleware("admin", "executive"), Edit)
-PropertyRouter.delete('/delete/:id', RoleAuthMiddleware("admin"), DeleteById)
 
-//property images
+//property images - these routes must come before the generic /:id route to avoid conflicts
 PropertyRouter.post('/image/create/:id', MulterImageHandler(UploadPropertyImage.single('image')), CreatePropertyImageByPropertyId) 
 PropertyRouter.get('/images/all/:id',  GetAllPropertyImagesByPropertyId)
 PropertyRouter.get('/image/:id', GetPropertyImageById)
-PropertyRouter.delete('/delete/:id', DeletePropertyImageById)
-PropertyRouter.delete('/delete/all/:id', DeleteAllPropertyImageById)
+PropertyRouter.delete('/image/delete/:id', DeletePropertyImageById)
+PropertyRouter.delete('/image/delete/all/:id', DeleteAllPropertyImageById)
+
+// Generic routes should come last
+PropertyRouter.get('/:id', RoleAuthMiddleware("admin", "sales", "executive", "saller", "user"), GetPropertyById)
+PropertyRouter.put('/edit/:id', RoleAuthMiddleware("admin", "executive"), Edit)
+PropertyRouter.delete('/delete/:id', RoleAuthMiddleware("admin"), DeleteById)
 
 export default PropertyRouter

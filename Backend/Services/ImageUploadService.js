@@ -30,6 +30,12 @@ export class ImageUploadService {
                 ]
             });
 
+            console.log('Cloudinary upload result:', {
+                public_id: uploadResult.public_id,
+                secure_url: uploadResult.secure_url,
+                folder: folder
+            });
+
             // Generate different size URLs
             const originalUrl = cloudinary.url(uploadResult.public_id, {
                 secure: true,
@@ -41,8 +47,7 @@ export class ImageUploadService {
                 resource_type: 'image',
                 width: 150,
                 height: 150,
-                crop: 'fill',
-                quality: 'auto'
+                crop: 'fill'
             });
 
             const mediumUrl = cloudinary.url(uploadResult.public_id, {
@@ -50,8 +55,7 @@ export class ImageUploadService {
                 resource_type: 'image',
                 width: 300,
                 height: 300,
-                crop: 'fill',
-                quality: 'auto'
+                crop: 'fill'
             });
 
             const displayUrl = cloudinary.url(uploadResult.public_id, {
@@ -59,8 +63,14 @@ export class ImageUploadService {
                 resource_type: 'image',
                 width: 800,
                 height: 600,
-                crop: 'fill',
-                quality: 'auto'
+                crop: 'fill'
+            });
+
+            console.log('Generated URLs:', {
+                originalUrl,
+                thumbnailUrl,
+                mediumUrl,
+                displayUrl
             });
 
             return {
@@ -141,8 +151,9 @@ export class ImageUploadService {
     static generatePublicId(filename) {
         const timestamp = Date.now();
         const randomString = Math.random().toString(36).substring(2, 15);
-        const extension = filename.split('.').pop();
-        return `${timestamp}_${randomString}.${extension}`;
+        // Remove file extension for Cloudinary public_id
+        const nameWithoutExt = filename.split('.').slice(0, -1).join('.');
+        return `${timestamp}_${randomString}`;
     }
 
     /**
