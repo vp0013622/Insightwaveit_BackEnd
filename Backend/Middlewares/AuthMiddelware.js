@@ -7,8 +7,8 @@ const AuthMiddelware = async(req, res, next)=>{
     var authHeaders = ""
     authHeaders = req.headers.authorization
     if(!authHeaders){
-        return res.status(500).json({
-            message: 'access not granted',
+        return res.status(401).json({
+            message: "Access denied: role not found"
         })
     }
     if(authHeaders && authHeaders.startsWith('Bearer ')){
