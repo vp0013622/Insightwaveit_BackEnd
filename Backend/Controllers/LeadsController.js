@@ -32,14 +32,31 @@ const Create = async (req, res) => {
             })
         }
 
-        const newLead = {
+        // Clean up empty strings for optional ObjectId fields
+        const cleanedData = {
             ...req.body,
+            // Convert empty strings to null for ObjectId fields
+            referredByUserId: referredByUserId && referredByUserId.trim() !== "" ? referredByUserId : null,
+            assignedByUserId: assignedByUserId && assignedByUserId.trim() !== "" ? assignedByUserId : null,
+            assignedToUserId: assignedToUserId && assignedToUserId.trim() !== "" ? assignedToUserId : null,
+            referanceFrom: referanceFrom && referanceFrom.trim() !== "" ? referanceFrom : null,
+            // Convert empty strings to null for string fields
+            referredByUserFirstName: referredByUserFirstName && referredByUserFirstName.trim() !== "" ? referredByUserFirstName.trim() : null,
+            referredByUserLastName: referredByUserLastName && referredByUserLastName.trim() !== "" ? referredByUserLastName.trim() : null,
+            referredByUserEmail: referredByUserEmail && referredByUserEmail.trim() !== "" ? referredByUserEmail.trim() : null,
+            referredByUserPhoneNumber: referredByUserPhoneNumber && referredByUserPhoneNumber.trim() !== "" ? referredByUserPhoneNumber.trim() : null,
+            referredByUserDesignation: referredByUserDesignation && referredByUserDesignation.trim() !== "" ? referredByUserDesignation.trim() : null,
+            leadAltEmail: leadAltEmail && leadAltEmail.trim() !== "" ? leadAltEmail.trim() : null,
+            leadAltPhoneNumber: leadAltPhoneNumber && leadAltPhoneNumber.trim() !== "" ? leadAltPhoneNumber.trim() : null,
+            leadLandLineNumber: leadLandLineNumber && leadLandLineNumber.trim() !== "" ? leadLandLineNumber.trim() : null,
+            leadWebsite: leadWebsite && leadWebsite.trim() !== "" ? leadWebsite.trim() : null,
+            note: note && note.trim() !== "" ? note.trim() : null,
             createdByUserId: req.user.id,
             updatedByUserId: req.user.id,
             published: true
         }
 
-        const lead = await LeadsModel.create(newLead)
+        const lead = await LeadsModel.create(cleanedData)
         return res.status(200).json({
             message: 'Lead created successfully',
             data: lead
@@ -196,13 +213,30 @@ const Edit = async (req, res) => {
             })
         }
 
-        const updatedLead = {
+        // Clean up empty strings for optional fields
+        const cleanedData = {
             ...req.body,
+            // Convert empty strings to null for ObjectId fields
+            referredByUserId: req.body.referredByUserId && req.body.referredByUserId.trim() !== "" ? req.body.referredByUserId : null,
+            assignedByUserId: req.body.assignedByUserId && req.body.assignedByUserId.trim() !== "" ? req.body.assignedByUserId : null,
+            assignedToUserId: req.body.assignedToUserId && req.body.assignedToUserId.trim() !== "" ? req.body.assignedToUserId : null,
+            referanceFrom: req.body.referanceFrom && req.body.referanceFrom.trim() !== "" ? req.body.referanceFrom : null,
+            // Convert empty strings to null for string fields
+            referredByUserFirstName: req.body.referredByUserFirstName && req.body.referredByUserFirstName.trim() !== "" ? req.body.referredByUserFirstName.trim() : null,
+            referredByUserLastName: req.body.referredByUserLastName && req.body.referredByUserLastName.trim() !== "" ? req.body.referredByUserLastName.trim() : null,
+            referredByUserEmail: req.body.referredByUserEmail && req.body.referredByUserEmail.trim() !== "" ? req.body.referredByUserEmail.trim() : null,
+            referredByUserPhoneNumber: req.body.referredByUserPhoneNumber && req.body.referredByUserPhoneNumber.trim() !== "" ? req.body.referredByUserPhoneNumber.trim() : null,
+            referredByUserDesignation: req.body.referredByUserDesignation && req.body.referredByUserDesignation.trim() !== "" ? req.body.referredByUserDesignation.trim() : null,
+            leadAltEmail: req.body.leadAltEmail && req.body.leadAltEmail.trim() !== "" ? req.body.leadAltEmail.trim() : null,
+            leadAltPhoneNumber: req.body.leadAltPhoneNumber && req.body.leadAltPhoneNumber.trim() !== "" ? req.body.leadAltPhoneNumber.trim() : null,
+            leadLandLineNumber: req.body.leadLandLineNumber && req.body.leadLandLineNumber.trim() !== "" ? req.body.leadLandLineNumber.trim() : null,
+            leadWebsite: req.body.leadWebsite && req.body.leadWebsite.trim() !== "" ? req.body.leadWebsite.trim() : null,
+            note: req.body.note && req.body.note.trim() !== "" ? req.body.note.trim() : null,
             createdByUserId: lead.createdByUserId,
             updatedByUserId: req.user.id
         }
 
-        const result = await LeadsModel.findByIdAndUpdate(id, updatedLead)
+        const result = await LeadsModel.findByIdAndUpdate(id, cleanedData)
         if (!result) {
             return res.status(404).json({
                 message: 'Lead not found'
